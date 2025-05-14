@@ -12,7 +12,6 @@ import {
   FormControl,
   InputLabel,
   Divider,
-  Autocomplete
 } from '@mui/material';
 import Checkbox from '@mui/material/Checkbox';
 import FormGroup from '@mui/material/FormGroup';
@@ -56,7 +55,7 @@ const ADL = () => {
     budget: '',
     moi: '',
     project_title: '',
-    receiver: '',
+    receiver_payroll: '',
     district: '',
     poi: '',
     
@@ -227,26 +226,48 @@ const filteredRows = rows.filter(row =>
 
   
   const handleInputChange = async (field, value) => {
-    setNewEntry((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    const cleanValue = value.replace(/,/g, '');
   
+    setNewEntry((prev) => {
+      const updatedEntry = {
+        ...prev,
+        [field]: value,
+      };
+  
+      const budget = Number(updatedEntry.budget?.replace(/,/g, '') || 0);
+      const amount = Number(updatedEntry.amount?.replace(/,/g, '') || 0);
+      const changeAmount = Number(updatedEntry.change_amount?.replace(/,/g, '') || 0);
+  
+      let obligated = 0;
+      if (field === 'budget' || field === 'amount' || field === 'change_amount') {
+        if (changeAmount > 0) {
+          obligated = budget - changeAmount;
+        } else {
+          obligated = budget - amount;
+        }
+        updatedEntry.obligated_amount = obligated;
+      }
+  
+      return updatedEntry;
+    });
+  
+    // Keep the seriesNo logic
     if (field === "pfo" && value) {
       try {
         const response = await axios.get(`${API_URL}/api/tupads/latest-series/${value}`);
-        const latestSeriesNo = response.data.latestSeriesNo || 0; 
-        const nextSeriesNo = String(latestSeriesNo + 1).padStart(3, "0"); 
+        const latestSeriesNo = response.data.latestSeriesNo || 0;
+        const nextSeriesNo = String(latestSeriesNo + 1).padStart(3, "0");
   
         setNewEntry((prev) => ({
           ...prev,
-          seriesNo: nextSeriesNo, 
+          seriesNo: nextSeriesNo,
         }));
       } catch (error) {
         console.error("Error fetching latest series number:", error);
       }
     }
   };
+  
 
   const resetForm = () => {
     setNewEntry({
@@ -262,7 +283,7 @@ const filteredRows = rows.filter(row =>
       moi: '',
       poi: '',
       district: '',
-      receiver: '',
+      receiver_payroll: '',
       project_title: '',
     });
   
@@ -276,7 +297,6 @@ const filteredRows = rows.filter(row =>
 
   const paginatedRows = filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
   const PFO_OPTIONS = ['CDO', 'BUKIDNON', 'TSSD', 'MISOR', 'MISOC', 'LDN', 'CAMIGUIN'];
-  const MOI = ['Co Partners', 'Direct Administration'];
   const DISTRICT_OPTIONS = ["1st", "2nd", "3rd", "4th"];
 
   const handleDistrictCheckboxChange = (option) => {
@@ -309,7 +329,7 @@ const filteredRows = rows.filter(row =>
           district: item.district,
           history: [
             {
-              receiver: item.receiver_payroll,
+              receiver_payroll: item.receiver_payroll,
               date_received_payroll: item.date_received_payroll || "N/A",
             },
           ],
@@ -375,7 +395,7 @@ const handleAddNewEntry = () => {
     pfo: newEntry.pfo,
     date_received_payroll: newEntry.date_received_payroll,
     budget: parseFloat(newEntry.budget.replace(/,/g, '')),
-    receiver_payroll: newEntry.receiver,
+    receiver_payroll: newEntry.receiver_payroll,
     district: newEntry.district,
     cut_off: newEntry.cut_off,
     amount: newEntry.amount,
@@ -513,7 +533,7 @@ const handleAddNewEntry = () => {
                   <TableBody>
                     {(Array.isArray(row.history) ? row.history : []).map((historyRow, index) => (
                       <TableRow key={index}>
-                        <TableCell align="center">{historyRow.receiver}</TableCell>
+                        <TableCell align="center">{historyRow.receiver_payroll}</TableCell>
                         <TableCell align="center">{historyRow.date_received_payroll}</TableCell>
                         <TableCell align="center">
                         <Typography
@@ -626,8 +646,6 @@ const handleAddNewEntry = () => {
 
   </Box>
 
-
-
     <Box
       sx={{
         display: "grid",
@@ -736,6 +754,33 @@ const handleAddNewEntry = () => {
   }}
   inputProps={{ inputMode: 'numeric' }}
 />
+
+<TextField
+        fullWidth
+        label="Cut Off"
+        value={newEntry.cut_off}
+        onChange={(e) => handleInputChange("cut_off", e.target.value)}
+      />
+      <TextField
+        fullWidth
+        label="Amount"
+        value={newEntry.amount}
+        onChange={(e) => handleInputChange("amount", e.target.value)}
+      />
+      <TextField
+        fullWidth
+        label="Change Amount"
+        value={newEntry.change_amount}
+        onChange={(e) => handleInputChange("change_amount", e.target.value)}
+      />
+      <TextField
+      fullWidth
+      label="Obligated"
+      value={newEntry.obligated_amount?.toLocaleString?.() || ""}
+      InputProps={{ readOnly: true }}
+    />
+
+
 
     </Box>
     <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}>

@@ -3,15 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tupad;
-use App\Models\TupadPaper;
+use App\Models\GipPaper;
 use Illuminate\Http\Request;
 
-class TupadPaperController extends Controller
+class GipPaperController extends Controller
 {
     // Get all Tupad Papers
     public function index()
     {
-        return response()->json(TupadPaper::all(), 200);
+        return response()->json(GipPaper::all(), 200);
     }
 
     // Store a new Tupad Paper
@@ -28,14 +28,14 @@ class TupadPaperController extends Controller
     ]);
 
     // Check if a record already exists for this tupad_id
-    $paper = TupadPaper::where('tupad_id', $request->tupad_id)->first();
+    $paper = GipPaper::where('tupad_id', $request->tupad_id)->first();
 
     if ($paper) {
         // Update existing record (preserve existing status)
         $paper->update($request->all());
     } else {
         // Create a new record with status always set to 'Pending'
-        $paper = TupadPaper::create(array_merge($request->all(), ['status' => 'Pending']));
+        $paper = GipPaper::create(array_merge($request->all(), ['status' => 'Pending']));
     }
 
     return response()->json([
@@ -48,10 +48,10 @@ class TupadPaperController extends Controller
 
     public function show($id)
 {
-    $paper = TupadPaper::find($id);
+    $paper = GipPaper::find($id);
 
     if ($paper && $paper->tupad_id) {
-        $correctPaper = TupadPaper::where('tupad_id', $paper->tupad_id)->first();
+        $correctPaper = GipPaper::where('tupad_id', $paper->tupad_id)->first();
 
         if ($correctPaper) {
             return response()->json($correctPaper, 200);
@@ -64,7 +64,7 @@ class TupadPaperController extends Controller
 public function showByTupadId($tupad_id)
 {
     // Find by `tupad_id`
-    $paper = TupadPaper::where('tupad_id', $tupad_id)->first();
+    $paper = GipPaper::where('tupad_id', $tupad_id)->first();
 
     // If not found, return an error
     if (!$paper) {
@@ -79,7 +79,7 @@ public function showByTupadId($tupad_id)
     // Update a Tupad Paper
     public function update(Request $request, $id)
     {
-        $paper = TupadPaper::find($id);
+        $paper = GipPaper::find($id);
 
         if (!$paper) {
             return response()->json(['message' => 'Paper not found'], 404);
@@ -99,7 +99,7 @@ public function showByTupadId($tupad_id)
     // Delete a Tupad Paper
     public function destroy($id)
     {
-        $paper = TupadPaper::find($id);
+        $paper = GipPaper::find($id);
 
         if (!$paper) {
             return response()->json(['message' => 'Paper not found'], 404);

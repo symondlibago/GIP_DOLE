@@ -24,9 +24,9 @@ class CreateTupadsTable extends Migration
             $table->integer('duration'); // Field for duration in days
             $table->string('location'); // Field for location
             $table->string('cut_off')->nullable(); // Field for location
-            $table->decimal('amount')->nullable();
-            $table->decimal('change_amount')->nullable();
-            $table->decimal('obligated_amount')->nullable();
+            $table->decimal('amount', 15, 2)->nullable();
+            $table->decimal('change_amount', 15, 2)->nullable();
+            $table->decimal('obligated_amount', 15, 2)->nullable();
             $table->decimal('budget', 15, 2); // Numerical budget with precision
             $table->date('date_received_payroll')->nullable(); // Field for received date
             $table->string('receiver_payroll')->nullable(); // Field for receiver

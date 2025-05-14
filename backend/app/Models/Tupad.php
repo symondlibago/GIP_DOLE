@@ -42,7 +42,7 @@ class Tupad extends Model
     }
     public function paper()
 {
-    return $this->hasOne(TupadPaper::class, 'tupad_id');
+    return $this->hasOne(GipPaper::class, 'tupad_id');
 }
 
     

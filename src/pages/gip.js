@@ -19,8 +19,6 @@ import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import PropTypes from 'prop-types';
 import TablePagination from '@mui/material/TablePagination';
-import Pagination from '@mui/material/Pagination';
-import PaginationItem from '@mui/material/PaginationItem';
 import Collapse from '@mui/material/Collapse';
 import IconButton from '@mui/material/IconButton';
 import Table from '@mui/material/Table';
@@ -71,8 +69,7 @@ const GIP = () => {
   const [openRows, setOpenRows] = useState({});
   const [selectedTupadsId, setSelectedTupadsId] = useState(null);
   const [statuses, setStatuses] = useState([]);
-  const [pageModal, setPageModal] = useState(1);
-  const ITEMS_PER_PAGE = 5;
+  const ITEMS_PER_PAGE = 6;
   const formatDateTime = (dateString) => {
     return dateString ? new Date(dateString).toISOString().slice(0, 16) : "mm/dd/yyyy";
   };
@@ -86,13 +83,6 @@ const GIP = () => {
     );
   };
 
-  const isNextDisabled = () => {
-    const requiredFields = ["TSSD", "Budget", "IMSD Chief for Appraisal Signature", "ARD for Appraisal Signature", "RD Approval and WP Signature"];
-    return statuses.some(status => requiredFields.includes(status.name) && !status.date);
-  };
-  
-
-
   const formatDate = (date) => {
     return date && date !== "mm/dd/yyyy" ? date : null;
   };
@@ -101,20 +91,17 @@ const GIP = () => {
     try {
         const payload = {
             tupad_id: selectedTupadsId,
-            tssd: formatDate(statuses.find(s => s.name === "TSSD")?.date),
             budget: formatDate(statuses.find(s => s.name === "Budget")?.date),
-            imsd_chief: formatDate(statuses.find(s => s.name === "IMSD Chief for Appraisal Signature")?.date),
-            ard: formatDate(statuses.find(s => s.name === "ARD for Appraisal Signature")?.date),
-            rd: formatDate(statuses.find(s => s.name === "RD Approval and WP Signature")?.date),
-            process: formatDate(statuses.find(s => s.name === "Process to Budget")?.date),
-            budget_accounting: formatDate(statuses.find(s => s.name === "Budget to Accounting")?.date),
-            accounting: formatDate(statuses.find(s => s.name === "Accounting to Cashier")?.date),
-            payment_status: "Pending",
+            r_budget: formatDate(statuses.find(s => s.name === "Received from Budget")?.date),
+            tssd: formatDate(statuses.find(s => s.name === "TSSD")?.date),
+            r_tssd: formatDate(statuses.find(s => s.name === "Received from TSSD")?.date),
+            rd: formatDate(statuses.find(s => s.name === "RD")?.date),
+            r_rd: formatDate(statuses.find(s => s.name === "Received from RD")?.date),
         };
 
         console.log("Sending Payload:", payload);
 
-        const response = await axios.post("http://localhost:8000/api/tupad_papers", payload);
+        const response = await axios.post("http://localhost:8000/api/gip_papers", payload);
 
         console.log(response.data.message, response.data.data);
 
@@ -554,20 +541,18 @@ const handleAddNewEntry = () => {
                             }
 
                             try {
-                              const response = await fetch(`http://localhost:8000/api/tupads_papers/tupad/${row.id}`);
+                              const response = await fetch(`http://localhost:8000/api/gip_papers/gip/${row.id}`);
                               const data = response.ok ? await response.json() : {}; 
                               console.log("Fetched Data:", data);
 
                              
                               setStatuses([
-                                { name: "TSSD", date: formatDateTime(data.tssd) || "" },
                                 { name: "Budget", date: formatDateTime(data.budget) || "" },
-                                { name: "IMSD Chief for Appraisal Signature", date: formatDateTime(data.imsd_chief) || "" },
-                                { name: "ARD for Appraisal Signature", date: formatDateTime(data.ard) || "" },
-                                { name: "RD Approval and WP Signature", date: formatDateTime(data.rd) || "" },
-                                { name: "Process to Budget", date: formatDateTime(data.process) || "" },
-                                { name: "Budget to Accounting", date: formatDateTime(data.budget_accounting) || "" },
-                                { name: "Accounting to Cashier", date: formatDateTime(data.accounting) || "" },
+                                { name: "Received from Budget", date: formatDateTime(data.r_budget) || "" },
+                                { name: "TSSD", date: formatDateTime(data.tssd) || "" },
+                                { name: "Received from TSSD", date: formatDateTime(data.r_tssd) || "" },
+                                { name: "RD", date: formatDateTime(data.rd) || "" },
+                                { name: "Received from RD", date: formatDateTime(data.r_rd) || "" },
                               ]);
 
                               setSelectedTupadsId(row.id); 
@@ -846,14 +831,12 @@ const handleAddNewEntry = () => {
   >
     {/* Header with Close Button */}
     <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-      <Typography variant="h6" gutterBottom>Implementation Status</Typography>
-      <IconButton 
-        onClick={() => setStatusOpen(false)} 
-        sx={{ color: "red" }} // Set button color to red
-      >
+      <Typography variant="h6" gutterBottom>
+        Implementation Status
+      </Typography>
+      <IconButton onClick={() => setStatusOpen(false)} sx={{ color: "red" }}>
         <IoClose size={24} />
-</IconButton>
-
+      </IconButton>
     </Box>
 
     {/* Table Container */}
@@ -867,23 +850,21 @@ const handleAddNewEntry = () => {
         </TableHead>
         <TableBody>
           {statuses.length > 0 ? (
-            statuses
-              .slice((pageModal - 1) * ITEMS_PER_PAGE, pageModal * ITEMS_PER_PAGE)
-              .map((status, index) => (
-                <TableRow key={index}>
-                  <TableCell>{status.name || "No Name"}</TableCell>
-                  <TableCell>
-                    <TextField
-                      type="datetime-local"
-                      variant="outlined"
-                      size="small"
-                      fullWidth
-                      value={status.date || ""}
-                      onChange={(e) => handleDateChange(status.name, e.target.value)}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))
+            statuses.slice(0, ITEMS_PER_PAGE).map((status, index) => (
+              <TableRow key={index}>
+                <TableCell>{status.name || "No Name"}</TableCell>
+                <TableCell>
+                  <TextField
+                    type="datetime-local"
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    value={status.date || ""}
+                    onChange={(e) => handleDateChange(status.name, e.target.value)}
+                  />
+                </TableCell>
+              </TableRow>
+            ))
           ) : (
             <TableRow>
               <TableCell colSpan={2} align="center">No data available</TableCell>
@@ -893,45 +874,12 @@ const handleAddNewEntry = () => {
       </Table>
     </TableContainer>
 
-    {/* Footer with Pagination & Save Button */}
-    {statuses.length > ITEMS_PER_PAGE && (
-      <Box
-        sx={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          width: "100%",
-          bgcolor: "background.paper",
-          p: 2,
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        {/* Pagination - Centered */}
-        <Box sx={{ flex: 1, display: "flex" }}>
-          <Pagination
-            count={Math.ceil(statuses.length / ITEMS_PER_PAGE)}
-            page={pageModal}
-            onChange={(event, value) => {
-              if (!isNextDisabled() || value < pageModal) {
-                setPageModal(value); // Allow only backward movement if fields are empty
-              }
-            }}
-            renderItem={(item) => (
-              <PaginationItem
-                {...item}
-                disabled={isNextDisabled() && item.type === "next"} // Disable "Next" if fields are missing
-              />
-            )}
-          />
-        </Box>
-
-        {/* Save Button - Aligned to the Right */}
-        <Button variant="contained" color="primary" onClick={handleSave}>
-          Save
-        </Button>
-      </Box>
-    )}
+    {/* Save Button */}
+    <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
+      <Button variant="contained" color="primary" onClick={handleSave}>
+        Save
+      </Button>
+    </Box>
   </Box>
 </Modal>
 
