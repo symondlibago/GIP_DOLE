@@ -4,6 +4,7 @@ use App\Http\Controllers\TupadController;
 use App\Http\Controllers\TupadPaperController;
 use App\Http\Controllers\GipPaperController;
 use App\Http\Controllers\AdlPaperController;
+use App\Http\Controllers\NamesController;
 use Illuminate\Support\Facades\Route;
 
 // Route::apiResource('tupad_papers', TupadPaperController::class);
@@ -25,4 +26,9 @@ Route::get('/gip_papers/gip/{tupad_id}', [GipPaperController::class, 'showByTupa
 Route::apiResource('adl_papers', AdlPaperController::class);
 Route::get('/adl_papers/{id}', [AdlPaperController::class, 'show']);
 Route::get('/adl_papers/adl/{tupad_id}', [AdlPaperController::class, 'showByTupadId']);
+
+Route::apiResource('names', NamesController::class);
+Route::get('/names/{id}', [NamesController::class, 'show']);
+Route::get('/names/names/{tupad_id}', [NamesController::class, 'showByTupadId']);
+
 

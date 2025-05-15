@@ -7,22 +7,18 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up()
     {
-        Schema::create('adl_papers', function (Blueprint $table) {
+        Schema::create('names', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tupad_id')->constrained('tupads')->onDelete('cascade'); // Foreign key fix
             $table->date('tssd')->nullable();
             $table->date('r_tssd')->nullable();
-            $table->date('budget')->nullable();
-            $table->date('r_budget')->nullable();
-            $table->date('rt_budget')->nullable();
-            $table->date('accounting')->nullable();
-            $table->date('r_accounting')->nullable();
+            $table->json('name')->nullable();
             $table->timestamps();
         });
     }
 
     public function down()
     {
-        Schema::dropIfExists('adl_papers');
+        Schema::dropIfExists('names');
     }
 };

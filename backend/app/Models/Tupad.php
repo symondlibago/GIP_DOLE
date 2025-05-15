@@ -50,5 +50,10 @@ public function papers()
     return $this->hasOne(AdlPaper::class, 'tupad_id');
 }
 
+public function names()
+{
+    return $this->hasOne(Names::class, 'tupad_id');
+}
+
     
 }

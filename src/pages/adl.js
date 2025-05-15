@@ -33,6 +33,8 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { IoIosAddCircleOutline, IoIosTrash} from "react-icons/io";
 import { MdOutlineFileDownload } from "react-icons/md";
 import { CiSearch } from "react-icons/ci";
+import { GrFormNext } from "react-icons/gr";
+import { GrFormPrevious } from "react-icons/gr";
 import Swal from "sweetalert2";
 import API_URL from './api';
 import { IoClose } from "react-icons/io5"; 
@@ -41,6 +43,7 @@ const ADL = () => {
   const [rows, setRows] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
+  const [namesOpen, setNamesOpen] = useState(false);
   const [newEntry, setNewEntry] = useState({
     pfo: '',
     adlNo: '',
@@ -58,7 +61,8 @@ const ADL = () => {
     poi: '',
     
   });
-
+  const [names, setNames] = useState([]);
+  const [currentPage, setCurrentPage] = useState(0);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10); 
   const [searchQuery, setSearchQuery] = useState("");
@@ -69,6 +73,7 @@ const ADL = () => {
   const [selectedTupadsId, setSelectedTupadsId] = useState(null);
   const [statuses, setStatuses] = useState([]);
   const ITEMS_PER_PAGE = 7;
+  const NAMES_PER_PAGE = 10;
   const formatDateTime = (dateString) => {
     return dateString ? new Date(dateString).toISOString().slice(0, 16) : "mm/dd/yyyy";
   };
@@ -126,6 +131,42 @@ const ADL = () => {
             text: error.response?.data?.message || "An error occurred while saving.",
         });
     }
+};
+
+const handleNameSave = async () => {
+  try {
+      const payload = {
+          tupad_id: selectedTupadsId,
+          tssd: formatDate(statuses.find(s => s.name === "TSSD")?.date),
+          r_tssd: formatDate(statuses.find(s => s.name === "Received from TSSD")?.date),
+          name: names, // include the array
+      };
+
+      console.log("Sending Payload:", payload);
+
+      const response = await axios.post("http://localhost:8000/api/names", payload);
+
+      console.log(response.data.message, response.data.data);
+
+      Swal.fire({
+          icon: "success",
+          title: "Saved Successfully!",
+          text: "Your data has been saved.",
+          timer: 2000,
+          showConfirmButton: false,
+      });
+
+      setNamesOpen(false);
+      fetchTupadData(); // Refresh data after saving
+  } catch (error) {
+      console.error("Error saving data:", error.response?.data || error.message);
+
+      Swal.fire({
+          icon: "error",
+          title: "Save Failed",
+          text: error.response?.data?.message || "An error occurred while saving.",
+      });
+  }
 };
 
   
@@ -523,63 +564,114 @@ const handleAddNewEntry = () => {
                       <TableCell align="center" style={{ fontWeight: 'bold' }}>Received By</TableCell>
                       <TableCell align="center" style={{ fontWeight: 'bold' }}>Date Received</TableCell>
                       <TableCell align="center" style={{ fontWeight: 'bold' }}>Status History</TableCell>
+                      <TableCell align="center" style={{ fontWeight: 'bold' }}>Names</TableCell>
                       
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {(Array.isArray(row.history) ? row.history : []).map((historyRow, index) => (
-                      <TableRow key={index}>
-                        <TableCell align="center">{historyRow.receiver_payroll}</TableCell>
-                        <TableCell align="center">{historyRow.date_received_payroll}</TableCell>
-                        <TableCell align="center">
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            textDecoration: "underline",
-                            color: "blue",
-                            cursor: "pointer",
-                          }}
-                          onClick={async () => {
-                            console.log("Row Data:", row);
-                            console.log("Tupad ID:", row.id); 
+                    {(Array.isArray(row.history) ? row.history : []).map((historyRow, index) => {
+                      return (
+                        <TableRow key={index}>
+                          <TableCell align="center">{historyRow.receiver_payroll}</TableCell>
+                          <TableCell align="center">{historyRow.date_received_payroll}</TableCell>
+                          <TableCell align="center">
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                textDecoration: "underline",
+                                color: "blue",
+                                cursor: "pointer",
+                              }}
+                              onClick={async () => {
+                                console.log("Row Data:", row);
+                                console.log("Tupad ID:", row.id);
 
-                            if (!row.id) {
-                              console.error("Tupad ID is undefined for this row");
-                              return;
-                            }
+                                if (!row.id) {
+                                  console.error("Tupad ID is undefined for this row");
+                                  return;
+                                }
 
-                            try {
-                              const response = await fetch(`http://localhost:8000/api/adl_papers/adl/${row.id}`);
-                              const data = response.ok ? await response.json() : {}; 
-                              console.log("Fetched Data:", data);
-
-                             
-                              setStatuses([
-                                { name: "TSSD", date: formatDateTime(data.tssd) || "" },
-                                { name: "Received from TSSD", date: formatDateTime(data.r_tssd) || "" },
-                                { name: "Budget", date: formatDateTime(data.budget) || "" },
-                                { name: "Received from Budget", date: formatDateTime(data.r_budget) || "" },
-                                { name: "Return to Budget", date: formatDateTime(data.rt_budget) || "" },
-                                { name: "Accounting", date: formatDateTime(data.accounting) || "" },
-                                { name: "Return to Accounting", date: formatDateTime(data.r_accounting) || "" },
-                              ]);
-
-                              setSelectedTupadsId(row.id); 
-                              setStatusOpen(true); 
-
-                            } catch (error) {
-                              console.error("Error fetching data:", error);
-                              setStatusOpen(true); 
-                            }
-                          }}
-                        >
-                          View Details
-                        </Typography>
+                                try {
+                                  const response = await fetch(`http://localhost:8000/api/adl_papers/adl/${row.id}`);
+                                  const data = response.ok ? await response.json() : {};
+                                  console.log("Fetched Data:", data);
 
 
-                      </TableCell>
-                      </TableRow>
-                    ))}
+                                  setStatuses([
+                                    { name: "TSSD", date: formatDateTime(data.tssd) || "" },
+                                    { name: "Received from TSSD", date: formatDateTime(data.r_tssd) || "" },
+                                    { name: "Budget", date: formatDateTime(data.budget) || "" },
+                                    { name: "Received from Budget", date: formatDateTime(data.r_budget) || "" },
+                                    { name: "Return to Budget", date: formatDateTime(data.rt_budget) || "" },
+                                    { name: "Accounting", date: formatDateTime(data.accounting) || "" },
+                                    { name: "Return to Accounting", date: formatDateTime(data.r_accounting) || "" },
+                                  ]);
+
+                                  setSelectedTupadsId(row.id);
+                                  setStatusOpen(true);
+
+                                } catch (error) {
+                                  console.error("Error fetching data:", error);
+                                  setStatusOpen(true);
+                                }
+                              } }
+                            >
+                              View Details
+                            </Typography>
+                          </TableCell>
+
+
+                          {/* >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> */}
+
+
+                          <TableCell align="center"> 
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                textDecoration: "underline",
+                                color: "blue",
+                                cursor: "pointer",
+                              }}
+                              onClick={async () => {
+                                console.log("Row Data:", row);
+                                console.log("Tupad ID:", row.id);
+
+                                if (!row.id) {
+                                  console.error("Tupad ID is undefined for this row");
+                                  return;
+                                }
+
+                                try {
+                                  const response = await fetch(`http://localhost:8000/api/names/names/${row.id}`);
+                                  const data = response.ok ? await response.json() : {};
+                                  console.log("Fetched Data:", data);
+
+
+                                  setStatuses([
+                                    { name: "TSSD", date: formatDateTime(data.tssd) || "" },
+                                    { name: "Received from TSSD", date: formatDateTime(data.r_tssd) || "" },
+                                  ]);
+
+                                  setNames(data.name || []);
+
+                                  setSelectedTupadsId(row.id);
+                                  setNamesOpen(true);
+
+                                } catch (error) {
+                                  console.error("Error fetching data:", error);
+                                  setNamesOpen(true);
+                                }
+                              } }
+                            >
+                              View Names
+                            </Typography>
+                          </TableCell>
+
+                          {/* NAAAAAAAAAAAMESSSSS */}
+
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </Box>
@@ -879,6 +971,143 @@ const handleAddNewEntry = () => {
     </Box>
   </Box>
 </Modal>
+
+
+{/* NAMES MODAL */}
+<Modal open={namesOpen} onClose={() => setNamesOpen(false)}>
+  <Box
+    sx={{
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: 900,
+      height: 580,
+      bgcolor: "background.paper",
+      boxShadow: 24,
+      p: 4,
+      borderRadius: 2,
+      display: "flex",
+      flexDirection: "column",
+    }}
+  >
+    {/* Header */}
+    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+      <Typography variant="h6">Names</Typography>
+      <IconButton onClick={() => setNamesOpen(false)} sx={{ color: "red" }}>
+        <IoClose size={24} />
+      </IconButton>
+    </Box>
+
+    {/* Scrollable Two Column List */}
+    <Box
+      sx={{
+        flex: 1,
+        overflowY: "auto",
+        display: "flex",
+        gap: 2,
+        pr: 1,
+      }}
+    >
+      {[0, 1].map((col) => (
+        <Box key={col} sx={{ flex: 1 }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ width: "20px" }}><strong>#</strong></TableCell>
+                <TableCell sx={{ width: "100%" }}><strong>Name</strong></TableCell>
+                <TableCell sx={{ width: "20px" }}></TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {names
+                .slice(currentPage * 20 + col * 10, currentPage * 20 + col * 10 + 10)
+                .map((name, index) => {
+                  const globalIndex = currentPage * 20 + col * 10 + index;
+                  return (
+                    <TableRow key={globalIndex}>
+                      <TableCell>{globalIndex + 1}</TableCell>
+                      <TableCell sx={{ pr: 0 }}>
+                        <TextField
+                          variant="outlined"
+                          size="small"
+                          fullWidth
+                          value={name}
+                          onChange={(e) => {
+                            const updated = [...names];
+                            updated[globalIndex] = e.target.value;
+                            setNames(updated);
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => {
+                            const updated = [...names];
+                            updated.splice(globalIndex, 1);
+                            setNames(updated);
+                          }}
+                        >
+                          -
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+            </TableBody>
+          </Table>
+        </Box>
+      ))}
+    </Box>
+
+    {/* Pagination */}
+    {/* Pagination */}
+<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2 }}>
+  <Button
+    variant="outlined"
+    size="small"
+    disabled={currentPage === 0}
+    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 0))}
+    startIcon={<GrFormPrevious />}
+  >
+    Previous
+  </Button>
+
+  <Typography variant="body2">
+    Page {currentPage + 1} of {Math.ceil(names.length / 20)}
+  </Typography>
+
+  <Button
+    variant="outlined"
+    size="small"
+    disabled={(currentPage + 1) * 20 >= names.length}
+    onClick={() => setCurrentPage((prev) => prev + 1)}
+    endIcon={<GrFormNext />}
+  >
+    Next
+  </Button>
+</Box>
+
+
+    {/* Add Name */}
+    <Box sx={{ mt: 2 }}>
+      <Button variant="outlined" size="small" onClick={() => setNames([...names, ""])}>
+        + Add Name
+      </Button>
+    </Box>
+
+    {/* Save Button */}
+    <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
+      <Button variant="contained" color="primary" onClick={handleNameSave}>
+        Save
+      </Button>
+    </Box>
+  </Box>
+</Modal>
+
+
 
 
     <h2>ADL MONITORING</h2>
