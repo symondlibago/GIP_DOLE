@@ -18,8 +18,6 @@ import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import PropTypes from 'prop-types';
 import TablePagination from '@mui/material/TablePagination';
-import Pagination from '@mui/material/Pagination';
-import PaginationItem from '@mui/material/PaginationItem';
 import Collapse from '@mui/material/Collapse';
 import IconButton from '@mui/material/IconButton';
 import Table from '@mui/material/Table';
@@ -70,8 +68,7 @@ const ADL = () => {
   const [openRows, setOpenRows] = useState({});
   const [selectedTupadsId, setSelectedTupadsId] = useState(null);
   const [statuses, setStatuses] = useState([]);
-  const [pageModal, setPageModal] = useState(1);
-  const ITEMS_PER_PAGE = 5;
+  const ITEMS_PER_PAGE = 7;
   const formatDateTime = (dateString) => {
     return dateString ? new Date(dateString).toISOString().slice(0, 16) : "mm/dd/yyyy";
   };
@@ -85,11 +82,6 @@ const ADL = () => {
     );
   };
 
-  const isNextDisabled = () => {
-    const requiredFields = ["TSSD", "Budget", "IMSD Chief for Appraisal Signature", "ARD for Appraisal Signature", "RD Approval and WP Signature"];
-    return statuses.some(status => requiredFields.includes(status.name) && !status.date);
-  };
-  
 
 
   const formatDate = (date) => {
@@ -101,19 +93,17 @@ const ADL = () => {
         const payload = {
             tupad_id: selectedTupadsId,
             tssd: formatDate(statuses.find(s => s.name === "TSSD")?.date),
+            r_tssd: formatDate(statuses.find(s => s.name === "Received from TSSD")?.date),
             budget: formatDate(statuses.find(s => s.name === "Budget")?.date),
-            imsd_chief: formatDate(statuses.find(s => s.name === "IMSD Chief for Appraisal Signature")?.date),
-            ard: formatDate(statuses.find(s => s.name === "ARD for Appraisal Signature")?.date),
-            rd: formatDate(statuses.find(s => s.name === "RD Approval and WP Signature")?.date),
-            process: formatDate(statuses.find(s => s.name === "Process to Budget")?.date),
-            budget_accounting: formatDate(statuses.find(s => s.name === "Budget to Accounting")?.date),
-            accounting: formatDate(statuses.find(s => s.name === "Accounting to Cashier")?.date),
-            payment_status: "Pending",
+            r_budget: formatDate(statuses.find(s => s.name === "Received from Budget")?.date),
+            rt_budget: formatDate(statuses.find(s => s.name === "Return to Budget")?.date),
+            accounting: formatDate(statuses.find(s => s.name === "Accounting")?.date),
+            r_accounting: formatDate(statuses.find(s => s.name === "Return to Accounting")?.date),
         };
 
         console.log("Sending Payload:", payload);
 
-        const response = await axios.post("http://localhost:8000/api/tupad_papers", payload);
+        const response = await axios.post("http://localhost:8000/api/adl_papers", payload);
 
         console.log(response.data.message, response.data.data);
 
@@ -398,8 +388,8 @@ const handleAddNewEntry = () => {
     receiver_payroll: newEntry.receiver_payroll,
     district: newEntry.district,
     cut_off: newEntry.cut_off,
-    amount: newEntry.amount,
-    change_amount: newEntry.change_amount,
+    amount: parseFloat(newEntry.amount.replace(/,/g, '')),
+    change_amount: parseFloat(newEntry.change_amount.replace(/,/g, '')),
     obligated_amount: newEntry.obligated_amount,
 
 
@@ -493,9 +483,15 @@ const handleAddNewEntry = () => {
             {Number(row.budget).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </TableCell>
           <TableCell align="center">{row.cut_off}</TableCell>
-          <TableCell align="center">{row.amount}</TableCell>
-          <TableCell align="center">{row.change_amount}</TableCell>
-          <TableCell align="center">{row.obligated_amount}</TableCell>
+          <TableCell align="center">
+            {Number(row.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </TableCell>
+          <TableCell align="center">
+            {Number(row.change_amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </TableCell>
+          <TableCell align="center">
+            {Number(row.obligated_amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </TableCell>
           <TableCell align="center">
           <Button
             variant="text" // Removes background color
@@ -553,20 +549,19 @@ const handleAddNewEntry = () => {
                             }
 
                             try {
-                              const response = await fetch(`http://localhost:8000/api/tupads_papers/tupad/${row.id}`);
+                              const response = await fetch(`http://localhost:8000/api/adl_papers/adl/${row.id}`);
                               const data = response.ok ? await response.json() : {}; 
                               console.log("Fetched Data:", data);
 
                              
                               setStatuses([
                                 { name: "TSSD", date: formatDateTime(data.tssd) || "" },
+                                { name: "Received from TSSD", date: formatDateTime(data.r_tssd) || "" },
                                 { name: "Budget", date: formatDateTime(data.budget) || "" },
-                                { name: "IMSD Chief for Appraisal Signature", date: formatDateTime(data.imsd_chief) || "" },
-                                { name: "ARD for Appraisal Signature", date: formatDateTime(data.ard) || "" },
-                                { name: "RD Approval and WP Signature", date: formatDateTime(data.rd) || "" },
-                                { name: "Process to Budget", date: formatDateTime(data.process) || "" },
-                                { name: "Budget to Accounting", date: formatDateTime(data.budget_accounting) || "" },
-                                { name: "Accounting to Cashier", date: formatDateTime(data.accounting) || "" },
+                                { name: "Received from Budget", date: formatDateTime(data.r_budget) || "" },
+                                { name: "Return to Budget", date: formatDateTime(data.rt_budget) || "" },
+                                { name: "Accounting", date: formatDateTime(data.accounting) || "" },
+                                { name: "Return to Accounting", date: formatDateTime(data.r_accounting) || "" },
                               ]);
 
                               setSelectedTupadsId(row.id); 
@@ -762,17 +757,31 @@ const handleAddNewEntry = () => {
         onChange={(e) => handleInputChange("cut_off", e.target.value)}
       />
       <TextField
-        fullWidth
-        label="Amount"
-        value={newEntry.amount}
-        onChange={(e) => handleInputChange("amount", e.target.value)}
-      />
-      <TextField
-        fullWidth
-        label="Change Amount"
-        value={newEntry.change_amount}
-        onChange={(e) => handleInputChange("change_amount", e.target.value)}
-      />
+  fullWidth
+  label="Amount (₱)"
+  value={newEntry.amount}
+  onChange={(e) => {
+    const rawValue = e.target.value.replace(/,/g, ''); // Remove existing commas
+    if (!isNaN(rawValue)) {
+      const formattedValue = Number(rawValue).toLocaleString(); // Add commas
+      handleInputChange("amount", formattedValue);
+    }
+  }}
+  inputProps={{ inputMode: 'numeric' }}
+/>
+<TextField
+  fullWidth
+  label="Change Amount (₱)"
+  value={newEntry.change_amount}
+  onChange={(e) => {
+    const rawValue = e.target.value.replace(/,/g, ''); // Remove existing commas
+    if (!isNaN(rawValue)) {
+      const formattedValue = Number(rawValue).toLocaleString(); // Add commas
+      handleInputChange("change_amount", formattedValue);
+    }
+  }}
+  inputProps={{ inputMode: 'numeric' }}
+/>
       <TextField
       fullWidth
       label="Obligated"
@@ -819,14 +828,12 @@ const handleAddNewEntry = () => {
   >
     {/* Header with Close Button */}
     <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-      <Typography variant="h6" gutterBottom>Implementation Status</Typography>
-      <IconButton 
-        onClick={() => setStatusOpen(false)} 
-        sx={{ color: "red" }} // Set button color to red
-      >
+      <Typography variant="h6" gutterBottom>
+        Implementation Status
+      </Typography>
+      <IconButton onClick={() => setStatusOpen(false)} sx={{ color: "red" }}>
         <IoClose size={24} />
-</IconButton>
-
+      </IconButton>
     </Box>
 
     {/* Table Container */}
@@ -840,23 +847,21 @@ const handleAddNewEntry = () => {
         </TableHead>
         <TableBody>
           {statuses.length > 0 ? (
-            statuses
-              .slice((pageModal - 1) * ITEMS_PER_PAGE, pageModal * ITEMS_PER_PAGE)
-              .map((status, index) => (
-                <TableRow key={index}>
-                  <TableCell>{status.name || "No Name"}</TableCell>
-                  <TableCell>
-                    <TextField
-                      type="datetime-local"
-                      variant="outlined"
-                      size="small"
-                      fullWidth
-                      value={status.date || ""}
-                      onChange={(e) => handleDateChange(status.name, e.target.value)}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))
+            statuses.slice(0, ITEMS_PER_PAGE).map((status, index) => (
+              <TableRow key={index}>
+                <TableCell>{status.name || "No Name"}</TableCell>
+                <TableCell>
+                  <TextField
+                    type="datetime-local"
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    value={status.date || ""}
+                    onChange={(e) => handleDateChange(status.name, e.target.value)}
+                  />
+                </TableCell>
+              </TableRow>
+            ))
           ) : (
             <TableRow>
               <TableCell colSpan={2} align="center">No data available</TableCell>
@@ -866,45 +871,12 @@ const handleAddNewEntry = () => {
       </Table>
     </TableContainer>
 
-    {/* Footer with Pagination & Save Button */}
-    {statuses.length > ITEMS_PER_PAGE && (
-      <Box
-        sx={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          width: "100%",
-          bgcolor: "background.paper",
-          p: 2,
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        {/* Pagination - Centered */}
-        <Box sx={{ flex: 1, display: "flex" }}>
-          <Pagination
-            count={Math.ceil(statuses.length / ITEMS_PER_PAGE)}
-            page={pageModal}
-            onChange={(event, value) => {
-              if (!isNextDisabled() || value < pageModal) {
-                setPageModal(value); // Allow only backward movement if fields are empty
-              }
-            }}
-            renderItem={(item) => (
-              <PaginationItem
-                {...item}
-                disabled={isNextDisabled() && item.type === "next"} // Disable "Next" if fields are missing
-              />
-            )}
-          />
-        </Box>
-
-        {/* Save Button - Aligned to the Right */}
-        <Button variant="contained" color="primary" onClick={handleSave}>
-          Save
-        </Button>
-      </Box>
-    )}
+    {/* Save Button */}
+    <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
+      <Button variant="contained" color="primary" onClick={handleSave}>
+        Save
+      </Button>
+    </Box>
   </Box>
 </Modal>
 
@@ -914,100 +886,80 @@ const handleAddNewEntry = () => {
     <Box 
   sx={{ 
     display: "flex", 
-    justifyContent: "space-between", 
+    justifyContent: "flex-end", // Align content to the right
     alignItems: "center", 
-    width: "98%"
+    width: "100%", // full width container
+    paddingRight: "20px" // optional padding from right edge
   }}
 >
-  <Button
-    variant="contained"
-    startIcon={<IoIosAddCircleOutline />}
-    onClick={() => {
-      resetForm();
-      setModalOpen(true);
-    }}
-    sx={{ 
-      width: "250px",
-      height: "50px",  
-      fontSize: "1rem",  
-      backgroundColor: "#A4B465", 
-      color: "white", 
-      "&:hover": { backgroundColor: "#A0C878" } 
-    }}
-  >
-    Insert New WP
-  </Button>
-
   <Box
-  sx={{
-    display: "flex",
-    alignItems: "center",
-    backgroundColor: "white",
-    borderRadius: "5px",
-    width: "400px",
-    height: "50px",
-    marginLeft: "20px",
-    padding: "0 8px",
-    border: "1px solid #c4c4c4"
-  }}
->
-  <FormControl
-  size="small"
-  sx={{
-    width: "110px", // fixed width
-    marginRight: 1,
-    backgroundColor: "transparent"
-  }}
->
-  <Select
-    displayEmpty
-    value={selectedPFO}
-    onChange={(e) => setSelectedPFO(e.target.value)}
     sx={{
-      fontSize: "0.85rem",
-      backgroundColor: "transparent",
-      boxShadow: "none",
-      ".MuiOutlinedInput-notchedOutline": { border: "none" },
-      "&.Mui-focused .MuiOutlinedInput-notchedOutline": { border: "none" },
-      whiteSpace: "nowrap",
-      overflow: "hidden",
-      textOverflow: "ellipsis"
+      display: "flex",
+      alignItems: "center",
+      backgroundColor: "white",
+      borderRadius: "5px",
+      width: "400px",
+      height: "50px",
+      padding: "0 8px",
+      border: "1px solid #c4c4c4"
     }}
-    disableUnderline
   >
-    <MenuItem value="">
-      <em>All PFOs</em>
-    </MenuItem>
-    {PFO_OPTIONS.map(pfo => (
-      <MenuItem key={pfo} value={pfo}>{pfo}</MenuItem>
-    ))}
-  </Select>
-</FormControl>
+    <FormControl
+      size="small"
+      sx={{
+        width: "110px",
+        marginRight: 1,
+        backgroundColor: "transparent"
+      }}
+    >
+      <Select
+        displayEmpty
+        value={selectedPFO}
+        onChange={(e) => setSelectedPFO(e.target.value)}
+        sx={{
+          fontSize: "0.85rem",
+          backgroundColor: "transparent",
+          boxShadow: "none",
+          ".MuiOutlinedInput-notchedOutline": { border: "none" },
+          "&.Mui-focused .MuiOutlinedInput-notchedOutline": { border: "none" },
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis"
+        }}
+        disableUnderline
+      >
+        <MenuItem value="">
+          <em>All PFOs</em>
+        </MenuItem>
+        {PFO_OPTIONS.map(pfo => (
+          <MenuItem key={pfo} value={pfo}>{pfo}</MenuItem>
+        ))}
+      </Select>
+    </FormControl>
 
+    <Divider orientation="vertical" flexItem sx={{ marginRight: 1 }} />
 
-  <Divider orientation="vertical" flexItem sx={{ marginRight: 1 }} />
+    <InputAdornment position="start">
+      <CiSearch size={18} />
+    </InputAdornment>
 
-  <InputAdornment position="start">
-    <CiSearch size={18} />
-  </InputAdornment>
-
-  <input
-    type="text"
-    placeholder="Search here"
-    value={searchQuery}
-    onChange={(e) => setSearchQuery(e.target.value)}
-    style={{
-      border: "none",
-      outline: "none",
-      flex: 1,
-      fontSize: "0.85rem",
-      padding: "8px",
-      backgroundColor: "transparent"
-    }}
-  />
+    <input
+      type="text"
+      placeholder="Search here"
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+      style={{
+        border: "none",
+        outline: "none",
+        flex: 1,
+        fontSize: "0.85rem",
+        padding: "8px",
+        backgroundColor: "transparent"
+      }}
+    />
+  </Box>
 </Box>
 
-</Box>
 
 
 

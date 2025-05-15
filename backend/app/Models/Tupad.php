@@ -45,5 +45,10 @@ class Tupad extends Model
     return $this->hasOne(GipPaper::class, 'tupad_id');
 }
 
+public function papers()
+{
+    return $this->hasOne(AdlPaper::class, 'tupad_id');
+}
+
     
 }
