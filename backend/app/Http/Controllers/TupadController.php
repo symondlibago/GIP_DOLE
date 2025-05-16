@@ -78,30 +78,47 @@ public function storeOrUpdate(Request $request, $id = null)
         'cut_off' => 'nullable|string|max:255',
         'amount' => 'nullable|numeric|min:0',
         'change_amount' => 'nullable|numeric|min:0',
-        'obligated_amount' => 'nullable|numeric|min:0',
         'date_received_payroll' => 'nullable|date',
         'receiver_payroll' => 'nullable|string|max:255',
-
-
-
-
     ]);
+
     if ($id) {
         $tupad = Tupad::findOrFail($id);
+
+        $budget = $validatedData['budget'] ?? $tupad->budget;
+        $amount = $validatedData['amount'] ?? $tupad->amount;
+        $changeAmount = array_key_exists('change_amount', $validatedData)
+            ? $validatedData['change_amount']
+            : $tupad->change_amount;
+
+        $validatedData['obligated_amount'] = $changeAmount !== null
+            ? $budget - $changeAmount
+            : $budget - $amount;
+
         $tupad->update($validatedData);
+
         return response()->json([
             'message' => 'Tupad record updated successfully!',
             'data' => $tupad,
         ]);
     } else {
-        // **Create New Record**
+        $budget = $validatedData['budget'] ?? 0;
+        $amount = $validatedData['amount'] ?? 0;
+        $changeAmount = $validatedData['change_amount'] ?? null;
+
+        $validatedData['obligated_amount'] = $changeAmount !== null
+            ? $budget - $changeAmount
+            : $budget - $amount;
+
         $tupad = Tupad::create($validatedData);
+
         return response()->json([
             'message' => 'Tupad record created successfully!',
             'data' => $tupad,
         ], 201);
     }
 }
+
 
 public function getAll()
 {

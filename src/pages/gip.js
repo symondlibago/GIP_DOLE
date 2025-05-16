@@ -731,15 +731,15 @@ const handleAddNewEntry = () => {
       />
       <TextField
         fullWidth
-        label="Location"
-        value={newEntry.location}
-        onChange={(e) => handleInputChange("location", e.target.value)}
-      />
-      <TextField
-        fullWidth
         label="Period of Implementation"
         value={newEntry.poi}
         onChange={(e) => handleInputChange("poi", e.target.value)}
+      />
+      <TextField
+        fullWidth
+        label="Location"
+        value={newEntry.location}
+        onChange={(e) => handleInputChange("location", e.target.value)}
       />
      <TextField
   fullWidth

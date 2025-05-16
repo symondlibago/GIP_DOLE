@@ -73,7 +73,6 @@ const ADL = () => {
   const [selectedTupadsId, setSelectedTupadsId] = useState(null);
   const [statuses, setStatuses] = useState([]);
   const ITEMS_PER_PAGE = 7;
-  const NAMES_PER_PAGE = 10;
   const formatDateTime = (dateString) => {
     return dateString ? new Date(dateString).toISOString().slice(0, 16) : "mm/dd/yyyy";
   };
@@ -297,29 +296,6 @@ const filteredRows = rows.filter(row =>
         console.error("Error fetching latest series number:", error);
       }
     }
-  };
-  
-
-  const resetForm = () => {
-    setNewEntry({
-      pfo: '',
-      adlNo: [''],
-      target: '',
-      initial: '',
-      status: 'Pending',
-      date_received_payroll: '',
-      duration: '',
-      location: '',
-      budget: '',
-      moi: '',
-      poi: '',
-      district: '',
-      receiver_payroll: '',
-      project_title: '',
-    });
-  
-    setAdlNumbers(['']); 
-    setSelectedEntry(null);
   };
   
   
