@@ -101,7 +101,7 @@ const GIP = () => {
 
         console.log("Sending Payload:", payload);
 
-        const response = await axios.post("http://localhost:8000/api/gip_papers", payload);
+        const response = await axios.post(`${API_URL}/api/gip_papers`, payload);
 
         console.log(response.data.message, response.data.data);
 
@@ -384,7 +384,7 @@ const handleAddNewEntry = () => {
   };
 
   if (selectedEntry) {
-    axios.put(`http://localhost:8000/api/tupads/${selectedEntry.id}`, payload)
+    axios.put(`${API_URL}/api/tupads/${selectedEntry.id}`, payload)
       .then((response) => {
         console.log('Entry updated successfully:', response.data);
 
@@ -417,7 +417,7 @@ const handleAddNewEntry = () => {
         });
       });
   } else {
-    axios.post(`http://localhost:8000/api/tupads`, payload)
+    axios.post(`${API_URL}:8000/api/tupads`, payload)
       .then((response) => {
         console.log('Entry created successfully:', response.data);
 
@@ -541,7 +541,7 @@ const handleAddNewEntry = () => {
                             }
 
                             try {
-                              const response = await fetch(`http://localhost:8000/api/gip_papers/gip/${row.id}`);
+                              const response = await fetch(`${API_URL}/api/gip_papers/gip/${row.id}`);
                               const data = response.ok ? await response.json() : {}; 
                               console.log("Fetched Data:", data);
 
