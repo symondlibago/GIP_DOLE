@@ -417,7 +417,7 @@ const handleAddNewEntry = () => {
         });
       });
   } else {
-    axios.post(`${API_URL}:8000/api/tupads`, payload)
+    axios.post(`${API_URL}/api/tupads`, payload)
       .then((response) => {
         console.log('Entry created successfully:', response.data);
 
